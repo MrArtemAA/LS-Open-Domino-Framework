@@ -1,0 +1,75 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	ru.livescripts.odf.errors
+	
+	Создана: Oct 3, 2017
+	Автор Artem A Areshko/LiveScripts/RU (Live-Scripts)
+	
+	Описание: 
+%END REM
+
+Option Public
+Option Declare
+
+%REM
+	---=== История изменений ===---
+	--- Версия: X.X.X; DD.MM.YYYY; Name
+	1. 
+	
+%END REM
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Public Sub ThrowError(errorCode As String)
+Declare Private Function GetErrorMessage(errorCode As String) As String
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DESIGN = "ru.livescripts.odf.errors"
+
+'*** ERROR CODES ***
+Public Const LS_ERRORCODE_NO_ERROR_CODE = 4499
+Public Const LS_ERRORCODE_NOT_AN_OBJECT = 4500
+Public Const LS_ERRORCODE_IS_NOTHING = 4501
+Public Const LS_ERRORCODE_ILLEGAL_TYPE = 4502
+Public Const LS_ERRORCODE_DOC_INVALID = 4503
+Public Const LS_ERRORCODE_DOC_DELETED = 4504
+Public Const LS_ERRORCODE_NOT_ARRAY = 4505
+Public Const LS_ERRORCODE_CAN_NOT_EDIT_DOCUMENT = 4506
+
+'*** ERROR MESSAGES ***
+Private Const LS_ERRORMSG_NO_ERROR_CODE = "Не удалось найти обработчик для код ошибки: "
+Private Const LS_ERRORMSG_NOT_AN_OBJECT = "Параметр не является объектом"
+Private Const LS_ERRORMSG_IS_NOTHING = "Параметр - Nothing"
+Private Const LS_ERRORMSG_ILLEGAL_TYPE = "Не корректный тип параметра"
+Private Const LS_ERRORMSG_DOC_INVALID = "Notes-документ не корректный (IsValid)"
+Private Const LS_ERRORMSG_DOC_DELETED = "Notes-документ удален (IsDeleted)"
+Private Const LS_ERRORMSG_NOT_ARRAY = "Параметр не является массивом"
+Private Const LS_ERRORMSG_CAN_NOT_EDIT_DOCUMENT = "Нет прав на изменение документа"
+
+
+'++LotusScript Development Environment:2:2:ThrowError:5:8
+'ThrowError
+%REM
+	Описание: 
+%END REM
+Public Sub ThrowError(errorCode As String)
+	Error errorCode, GetErrorMessage(errorCode)
+End Sub
+
+'++LotusScript Development Environment:2:1:GetErrorMessage:5:8
+'GetErrorMessage
+%REM
+	Описание: 
+%END REM
+Private Function GetErrorMessage(errorCode As String) As String
+	Select Case errorCode
+		Case LS_ERRORCODE_NOT_AN_OBJECT: GetErrorMessage = LS_ERRORMSG_NOT_AN_OBJECT
+		Case LS_ERRORCODE_IS_NOTHING: GetErrorMessage = LS_ERRORMSG_IS_NOTHING
+		Case LS_ERRORCODE_ILLEGAL_TYPE: GetErrorMessage = LS_ERRORMSG_ILLEGAL_TYPE
+		Case LS_ERRORCODE_DOC_INVALID: GetErrorMessage = LS_ERRORMSG_DOC_INVALID
+		Case LS_ERRORCODE_DOC_DELETED: GetErrorMessage = LS_ERRORMSG_DOC_DELETED
+		Case LS_ERRORCODE_NOT_ARRAY: GetErrorMessage = LS_ERRORMSG_NOT_ARRAY
+		Case LS_ERRORCODE_CAN_NOT_EDIT_DOCUMENT: GetErrorMessage = LS_ERRORMSG_CAN_NOT_EDIT_DOCUMENT
+		Case Else
+			Error LS_ERRORCODE_NO_ERROR_CODE, LS_ERRORMSG_NO_ERROR_CODE & errorCode
+	End Select
+End Function

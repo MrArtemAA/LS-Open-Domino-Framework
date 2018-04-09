@@ -1,0 +1,33 @@
+Started running tests at 09.04.2018 18:02:10
+----------------------------------
+ArraysTest.TestToArray (): OK
+ArraysTest.TestGetLength (): OK
+ArraysTest.TestGetLengthNotArray (): OK
+ArraysTest.TestEquals (): OK
+ArraysTest.TestAppend (): OK
+ArraysTest.TestUnique (): OK
+ArraysTest.TestTrim (): OK
+DominoTest.TestIsNewDocument (): OK
+DominoTest.TestCanEditDocument (): OK
+BaseObjectTest.TestToString (): OK
+AbstractDocumentTest.TestNew_NotesDocument (): OK
+AbstractDocumentTest.TestNew_NotesDatabase (): OK
+AbstractDocumentTest.TestNew_Nothing (): OK
+AbstractDocumentTest.TestSave (): OK
+AbstractDocumentTest.TestSetValue (): OK
+AbstractDocumentTest.TestSetValue_NoChange (): OK
+AbstractDocumentTest.TestAppendValue (): OK
+AbstractDocumentTest.TestDeleteValue (): OK
+AbstractDocumentTest.TestDeleteValue_NoItem (): OK
+AbstractDocumentTest.TestHasItem (): OK
+AbstractDocumentTest.TestFlag (): OK
+AbstractDocumentTest.TestTMPFlag (): OK
+AbstractDocumentTest.TestId (): OK
+AbstractDocumentTest.TestSetReaders (): OK
+AbstractDocumentTest.TestSetAuthors (): OK
+AbstractDocumentTest.TestAddReaders (): OK
+AbstractDocumentTest.TestAddAuthors (): OK
+----------------------------------
+Finished tests at 09.04.2018 18:02:10
+----------------------------------
+Tests summary. Total: 27; Success: 27; Failed: 0

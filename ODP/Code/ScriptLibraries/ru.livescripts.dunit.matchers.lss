@@ -1,0 +1,300 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	ru.livescripts.dunit.matchers
+	
+	Created: Oct 13, 2017
+	Author: Artem A Areshko/LiveScripts/RU (Live-Scripts)
+	
+	Description: 
+%END REM
+
+Option Public
+Option Declare
+
+Use "ru.livescripts.dunit.core"
+
+%REM
+	---=== Change Log ===---
+	--- Version: 1.1.0; 11.01.2018; Artem Areshko
+	1. Modified DocumentItemsMatcher.Matches()
+		Fixed error in getting value from item
+		
+	2. Modified DatabaseMatcher.Matches()
+		Added server name comparison
+	
+	--- Version: 1.1.0; 12.11.2017; Artem Areshko
+	1. Added classes
+		DatabaseMatcher
+		DocumentMatcher
+		
+	2. Modified DocumentItemsMatcher.New()
+		Added params validation
+	
+%END REM
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class SimpleValueMatcher As IMatcher
+Declare Class DocumentItemsMatcher As IMatcher
+Declare Class DatabaseMatcher As IMatcher
+Declare Class DocumentMatcher As IMatcher
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DESIGN = "ru.livescripts.dunit.matchers"
+
+
+'*** SimpleValueMatcher ***
+%REM
+	Description: 
+%END REM
+Class SimpleValueMatcher As IMatcher
+	
+	Private value1 As Variant
+	Private value2 As Variant
+	
+	'New
+	%REM
+		Description: 
+	%END REM
+	Public Sub New(value1 As Variant, value2 As Variant)
+		On Error GoTo ErrorHandler
+		Const FuncName = "SimpleValueMatcher.New ()"
+		
+		Me.value1 = value1
+		Me.value2 = value2
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Matches
+	%REM
+		Description: 
+	%END REM
+	Public Function Matches() As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "SimpleValueMatcher.Matches ()"
+		
+		Matches = (value1 = value2)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class
+'*** DocumentItemsMatcher ***
+%REM
+	Description: 
+%END REM
+Class DocumentItemsMatcher As IMatcher
+	
+	Private doc1 As NotesDocument
+	Private doc2 As NotesDocument
+	Private itemNames As Variant
+	
+	'New
+	%REM
+		Description:
+			itemNames - array of document item names 
+	%END REM
+	Public Sub New(doc1 As NotesDocument, doc2 As NotesDocument, itemNames As Variant)
+		On Error GoTo ErrorHandler
+		Const FuncName = "DocumentItemsMatcher.New ()"
+		
+		If doc1 Is Nothing Then Error LS_TEST_ERROR_MATCHER_PARAM, {doc1 is Nothing}
+		If doc2 Is Nothing Then Error LS_TEST_ERROR_MATCHER_PARAM, {doc2 is Nothing}
+		If Not IsArray(itemNames) Then Error LS_TEST_ERROR_MATCHER_PARAM, {itemNames must be an array}
+		
+		Set Me.doc1 = doc1
+		Set Me.doc2 = doc2
+		Me.itemNames = itemNames
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Matches
+	%REM
+		Description: 
+	%END REM
+	Public Function Matches() As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "DocumentItemsMatcher.Matches ()"
+		
+		ForAll itemName In itemNames
+			Dim item1 As NotesItem
+			Dim item2 As NotesItem
+			
+			Set item1 = doc1.Getfirstitem(Itemname)
+			Set item2 = doc2.Getfirstitem(Itemname)
+			
+			If (item1 Is Nothing And Not item2 Is Nothing) _
+			Or (Not item1 Is Nothing And item2 Is Nothing) Then
+				GoTo endh
+			ElseIf item1 Is Nothing And item2 Is Nothing Then
+				GoTo ReturnTrue
+			ElseIf item1.Type <> item2.Type Then
+				GoTo endh
+			End If
+						
+			Dim value1 As Variant
+			Dim value2 As Variant
+			
+			value1 = doc1.Getitemvalue(Itemname)
+			value2 = doc2.Getitemvalue(itemName)
+			If UBound(value1) <> UBound(value2) Then GoTo endh
+			
+			Dim i%
+			For i = 0 To UBound(value1)
+				If value1(i) <> value2(i) Then GoTo endh
+			Next
+		End ForAll
+		
+ReturnTrue:
+		Matches = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class
+'*** DatabaseMatcher ***
+%REM
+	Description: 
+%END REM
+Class DatabaseMatcher As IMatcher
+	
+	Private db1 As NotesDatabase
+	Private db2 As NotesDatabase
+	
+	'New
+	%REM
+		Description: 
+	%END REM
+	Public Sub New(db1 As NotesDatabase, db2 As NotesDatabase)
+		On Error GoTo ErrorHandler
+		Const FuncName = "DatabaseMatcher.New ()"
+		
+		If db1 Is Nothing Then Error LS_TEST_ERROR_MATCHER_PARAM, {db1 is Nothing}
+		If db2 Is Nothing Then Error LS_TEST_ERROR_MATCHER_PARAM, {db2 is Nothing}
+		
+		Set Me.db1 = db1
+		Set Me.db2 = db2
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Matches
+	%REM
+		Description: 
+	%END REM
+	Public Function Matches() As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "DatabaseMatcher.Matches ()"
+		
+		Dim dbServer1 As New NotesName(db1.Server)
+		Dim dbServer2 As New NotesName(db2.Server)
+		
+		If LCase(dbServer1.Canonical) <> LCase(dbServer2.Canonical) Or _
+		db1.Replicaid <> db2.Replicaid Or _
+		db1.Filepath <> db2.Filepath Or _
+		db1.Title <> db2.Title Then GoTo endh
+		
+		Matches = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class
+'*** DocumentMatcher ***
+%REM
+	Description: 
+%END REM
+Class DocumentMatcher As IMatcher
+	
+	Private doc1 As NotesDocument
+	Private doc2 As NotesDocument
+	
+	'New
+	%REM
+		Description: 
+	%END REM
+	Public Sub New(doc1 As NotesDocument, doc2 As NotesDocument)
+		On Error GoTo ErrorHandler
+		Const FuncName = "DocumentMatcher.New ()"
+		
+		If doc1 Is Nothing Then Error LS_TEST_ERROR_MATCHER_PARAM, {doc1 is Nothing}
+		If doc2 Is Nothing Then Error LS_TEST_ERROR_MATCHER_PARAM, {doc2 is Nothing}
+		
+		Set Me.doc1 = doc1
+		Set Me.doc2 = doc2
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Matches
+	%REM
+		Description: 
+	%END REM
+	Public Function Matches() As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "DocumentMatcher.Matches ()"
+		
+		If doc1.Universalid <> doc2.Universalid Then GoTo endh
+		
+		Dim dbMatcher As New DatabaseMatcher(doc1.Parentdatabase, doc2.Parentdatabase)
+		If Not dbMatcher.Matches() Then GoTo endh
+		
+		Dim items1 As Variant
+		Dim items2 As Variant
+		
+		items1 = doc1.Items
+		items2 = doc2.Items		
+		
+		If (IsArray(items1) And Not IsArray(items2)) Or _
+		(Not IsArray(items2) And IsArray(items2)) Then GoTo endh
+		
+		If IsArray(items1) And IsArray(items2) Then
+			If UBound(items1) <> UBound(items2) Then GoTo endh
+			
+			Dim i%
+			Dim itemsList1 List As Boolean
+			For i = 0 To UBound(items1)
+				itemsList1(items1(i).Name) = False
+			Next
+			
+			Dim itemNames2() As String
+			ReDim itemNames2 (0 To UBound(items2))
+			For i = 0 To UBound(items2)
+				If Not IsElement(itemsList1(items2(i).Name)) Then GoTo endh
+				itemNames2(i) = items2(i).Name
+			Next
+			Dim docItemsMatcher As New DocumentItemsMatcher(doc1, doc2, itemNames2)
+			If Not docItemsMatcher.Matches() Then GoTo endh
+		End If
+		
+		Matches = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", line " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class

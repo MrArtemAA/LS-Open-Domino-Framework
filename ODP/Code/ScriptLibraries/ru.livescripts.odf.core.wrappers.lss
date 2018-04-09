@@ -1,0 +1,562 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	ru.livescripts.odf.core.wrappers
+	
+	Создана: Oct 5, 2017
+	Автор Artem A Areshko/LiveScripts/RU (Live-Scripts)
+	
+	Описание: 
+%END REM
+
+Option Public
+Option Declare
+
+Use "ru.livescripts.odf.core"
+
+%REM
+	---=== История изменений ===---
+	--- Версия: X.X.X; DD.MM.YYYY; Name
+	1. 
+	
+%END REM
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class AbstractDocument As AbstractEntity
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DESIGN = "ru.livescripts.odf.core.wrappers"
+
+Private Const DOC_DEF_READERS_FIELD = "_readers"
+Private Const DOC_DEF_AUTHORS_FIELD = "_authors"
+Private Const DOC_DEF_READERS_WHICH_AUTHORS_PREFIX = "fromAuthors"
+'*** AbstractDocument ***
+%REM
+	Описание: 
+%END REM
+Class AbstractDocument As AbstractEntity
+	
+	Public NeedUpdateAccess As Boolean
+	
+	Private doc_ As NotesDocument
+	Private db_ As NotesDatabase
+	
+	'New
+	%REM
+		Описание: 
+	%END REM
+	Public Sub New(source As Variant)
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.New ()"
+		
+		Call Me.Initialize(Source)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Initialize
+	%REM
+		Описание: 
+	%END REM
+	Private Sub Initialize(source As Variant)
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.Initialize ()"
+		
+		Call Objects.Notnothing(source, "")
+		
+		Dim doc As NotesDocument
+		
+		If Source IsA "NOTESDATABASE" Then
+			Set doc = Source.CreateDocument()
+		ElseIf Source IsA "NOTESUIDATABASE" Then
+			Call Objects.Notnothing(source.Database, "")
+			Set doc = Source.Database.CreateDocument()
+		ElseIf Source IsA "NOTESDOCUMENT" Then 
+			Set doc = Source
+		ElseIf source IsA "NOTESUIDOCUMENT" Then
+			Call Objects.Notnothing(source.Document, "")
+			Set doc = Source.Document
+		Else
+			Call ThrowError(LS_ERRORCODE_ILLEGAL_TYPE)
+		End If
+		
+		Call Objects.Notnothing(doc, "")
+		If Not doc.IsValid Then Call ThrowError(LS_ERRORCODE_DOC_INVALID)
+		If doc.IsDeleted Then Call ThrowError(LS_ERRORCODE_DOC_DELETED)
+		
+		Set doc_ = doc
+		id_ = Me.UNID
+		Set db_ = doc.ParentDatabase
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Save
+	%REM
+		Описание: 
+	%END REM
+	Public Function Save() As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.Save ()"
+		
+		If Me.NeedUpdateAccess Then
+			Call Me.DoUpdateAccess()
+		End If
+		
+		If Me.IsNew() Or Me.IsModified Then
+			If Not Domino.Caneditdocument(doc_) Then
+				Call ThrowError(LS_ERRORCODE_CAN_NOT_EDIT_DOCUMENT)
+			End If
+			
+			Save = doc_.Save(False, False)
+		Else
+			Save = True
+		End If
+		
+		If Save Then
+			Me.IsModified = False
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Function
+	
+	'IsNew
+	%REM
+		Описание: 
+	%END REM
+	Public Function IsNew () As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.IsNew ()"
+		
+		IsNew = Domino.IsNewDocument(doc_)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Function
+	
+	'UNID
+	Public Property Get UNID As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.UNID GET"
+		
+		UNID = Domino.GetDocumentUNID(doc_)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Property
+	
+	'Doc Get
+	Public Property Get Doc As NotesDocument
+		Set Doc = doc_
+	End Property
+	
+	'Db Get
+	Public Property Get Db As NotesDatabase
+		Set Db = db_
+	End Property
+	
+	'UniversalID Get
+	Public Property Get UniversalID As String
+		UniversalID = doc_.UniversalID
+	End Property
+	
+	'NoteID Get
+	Public Property Get NoteID As String
+		NoteID = doc_.Noteid
+	End Property
+	
+	'GetValue
+	Public Function GetValue(itemName As String) As Variant
+		GetValue = doc_.Getitemvalue(Itemname)
+	End Function
+	
+	'SetValue
+	%REM
+		Описание: 
+	%END REM
+	Public Function SetValue(itemName As String, itemValue As Variant) As Variant
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.SetValue ()"
+		
+		If Me.IsValueModified(Me.GetValue(Itemname), itemValue) Then
+			Set SetValue = doc_.Replaceitemvalue(itemName, itemValue)
+			Me.IsModified = True
+		Else
+			Set SetValue = doc_.Getfirstitem(Itemname)
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Function
+	
+	'AppendValue
+	%REM
+		Описание: 
+	%END REM
+	Public Function AppendValue(itemName As String, itemValue As Variant) As NotesItem
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.AppendValue ()"
+		
+		Dim oldValue As Variant
+		Dim newValue As Variant
+		
+		oldValue = doc_.GetItemValue(itemName)
+		If CStr(oldValue(0)) = "" And UBound(oldValue) = 0 Then
+			Set AppendValue = doc_.Replaceitemvalue(Itemname, itemValue)
+		Else
+			Set AppendValue = doc_.Replaceitemvalue(Itemname, Arrays.Append(oldValue, itemValue))
+		End If
+		
+		Me.IsModified = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Function
+	
+	'DeleteValue ()
+	Public Function DeleteValue (itemName As String)
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.DeleteValue ()"
+		
+		If Me.HasItem(itemName) Then
+			Call doc_.RemoveItem(itemName)
+			Me.IsModified = True
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:	
+	End Function
+	
+	'IsValueModified
+	%REM
+		Описание: 
+	%END REM
+	Private Function IsValueModified(oldValue As Variant, newValue As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.IsValueModified ()"
+		
+		IsValueModified = Not Arrays.Equals(oldValue, Arrays.ToArray(newValue))
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'GetItem ()
+	Public Function GetItem(itemName As String) As NotesItem
+		Set GetItem = doc_.Getfirstitem(Itemname)
+	End Function
+	
+	'HasItem ()
+	Public Function HasItem(itemName As String) As Boolean
+		HasItem = Not doc_.Getfirstitem(Itemname) Is Nothing
+	End Function
+	
+	'IsModified
+	Public Property Get IsModified As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.IsModified GET"
+		
+		IsModified = Me.TMPFlag("ModifiedSinceSaved")
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Property
+	
+	'IsModified
+	Public Property Set IsModified As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.IsModified SET"
+		
+		If IsModified Then
+			Me.TMPFlag("ModifiedSinceSaved") = True
+		Else
+			Call doc_.RemoveItem("ModifiedSinceSaved")
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Property
+	
+	Private Sub DoUpdateAccess()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.DoUpdateAccess ()"
+		
+		Me.NeedUpdateAccess = False
+		
+		Call Me.SetValue(DOC_DEF_READERS_WHICH_AUTHORS_PREFIX, "")
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'Form Set
+	Public Property Set Form As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.Form Set"
+		
+		Call Me.SetValue("Form", Form)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:			
+	End Property
+	
+	'Form Get
+	Public Property Get Form As String
+		Form = Me.GetValue("Form")(0)
+	End Property
+	
+	'Created Get
+	Public Property Get Created As Variant
+		Created = Me.doc_.Created
+	End Property
+	
+	'Flag Set
+	Public Property Set Flag (fName As String) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.Flag Set"
+		
+		If Flag Then
+			Call Me.SetValue(fName, "1")
+		Else
+			Call Me.SetValue(fName, "0")
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:			
+	End Property
+	
+	'Flag Get
+	Public Property Get Flag (fName As String) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.Flag Get"
+		
+		Flag = (Me.GetValue(fName)(0) = "1")
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:			
+	End Property
+	
+	'TMPFlag Set
+	Public Property Set TMPFlag (fName As String) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.TMPFlag Set"
+		
+		If TMPFlag Then
+			Me.SetValue(fName, "1").SaveToDisk = False
+		Else
+			Me.SetValue(fName, "0").SaveToDisk = False
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:			
+	End Property
+	
+	'TMPFlag Get
+	Public Property Get TMPFlag (fName As String) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.TMPFlag Get"
+		
+		TMPFlag = (Me.GetValue(fName)(0) = "1")
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & _
+		"Wrapped document = " & Me.WrappedDocumentInfo & Chr(10) & Error$
+endh:			
+	End Property
+	
+	'WrappedDocumentInfo
+	Public Property Get WrappedDocumentInfo As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.WrappedDocumentInfo GET"
+		
+		WrappedDocumentInfo = Domino.GetDocumentInfo(doc_)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Property
+	
+	'ToString
+	%REM
+		Описание: 
+	%END REM
+	Public Function ToString() As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.ToString ()"
+		
+		ToString = BaseObject..ToString() & " [UNID = " & Me.UNID & ", WrappedDocument [" & _
+		Me.WrappedDocumentInfo & "]]"
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Public Function SetReaders(prefix As String, readers As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.SetReaders ()"
+		
+		Dim value As Variant
+		value = readers
+		If Me.UniqueThenCheckIfEmpty(value) Then GoTo endh
+		Me.SetValue(Me.GetReadersFieldName(prefix), value).IsReaders = True
+		
+		SetReaders = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Public Function SetAuthors(prefix As String, authors As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.SetAuthors ()"
+		
+		Dim value As Variant
+		value = authors
+		If Me.UniqueThenCheckIfEmpty(value) Then GoTo endh
+		Me.SetValue(Me.GetAuthorsFieldName(prefix), value).IsAuthors = True
+		Call Me.AddReaders(DOC_DEF_READERS_WHICH_AUTHORS_PREFIX, value)
+		
+		SetAuthors = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Public Function AddReaders(prefix As String, readers As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.AddReaders ()"
+		
+		Dim fieldName As String
+		fieldName = Me.GetReadersFieldName(prefix)
+		
+		Dim value As Variant		
+		value = Arrays.Append(Me.GetValue(fieldName), readers)
+		If Me.UniqueThenCheckIfEmpty(value) Then GoTo endh
+		Me.SetValue(fieldName, value).IsReaders = True
+		
+		AddReaders = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'AddAuthors
+	%REM
+		Описание: 
+	%END REM
+	Public Function AddAuthors(prefix As String, authors As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.AddAuthors ()"
+		
+		Dim fieldName As String
+		fieldName = Me.GetAuthorsFieldName(prefix)
+		
+		Dim value		
+		value = Arrays.Append(Me.GetValue(fieldName), authors)
+		If Me.UniqueThenCheckIfEmpty(value) Then GoTo endh		
+		Me.SetValue(fieldName, value).IsAuthors = True
+		Call Me.AddReaders(DOC_DEF_READERS_WHICH_AUTHORS_PREFIX, authors)
+		
+		AddAuthors = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Public Function GetReaders(prefix As String) As Variant
+		GetReaders = Me.GetValue(Me.GetReadersFieldName(Prefix))
+	End Function
+	
+	Public Function GetAuthors(prefix As String) As Variant
+		GetAuthors = Me.GetValue(Me.GetAuthorsFieldName(Prefix))
+	End Function
+	
+	Private Function UniqueThenCheckIfEmpty(value As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocument.UniqueThenCheckIfEmpty ()"
+		
+		UniqueThenCheckIfEmpty = True
+		
+		If IsArray(value) Then
+			value = Arrays.Trim(Arrays.Unique(value))
+			If UBound (value) = 0 And value (0) = "" Then GoTo endh
+		ElseIf value = "" Then
+			GoTo endh
+		End If
+		
+		UniqueThenCheckIfEmpty = False
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Private Function GetReadersFieldName(prefix As String) As String
+		GetReadersFieldName = prefix & DOC_DEF_READERS_FIELD
+	End Function
+	
+	Private Function GetAuthorsFieldName(prefix As String) As String
+		GetAuthorsFieldName = prefix & DOC_DEF_AUTHORS_FIELD
+	End Function
+
+End Class

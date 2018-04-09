@@ -1,0 +1,555 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	ru.livescripts.odf.core
+	
+	Создана: Oct 3, 2017
+	Автор Artem A Areshko/LiveScripts/RU (Live-Scripts)
+	
+	Описание: 
+%END REM
+
+Option Public
+Option Declare
+
+Use "ru.livescripts.odf.errors"
+
+%REM
+	---=== История изменений ===---
+	--- Версия: X.X.X; DD.MM.YYYY; Name
+	1. 
+	
+%END REM
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class BaseObject
+Declare Class Objects As BaseObject
+Declare Class Domino As BaseObject
+Declare Class Arrays As BaseObject
+Declare Class AbstractEntity As BaseObject
+Declare Static Function Objects() As Objects
+Declare Static Function Domino() As Domino
+Declare Static Function Arrays() As Arrays
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DESIGN = "ru.livescripts.odf.core"
+
+'===============================
+'===      P R I V A T E      ===
+'===     E X T E R N A L     ===
+'=== 	F U N C T I O N S    ===
+'=== D E C L A R A T I O N S ===
+'===============================
+Declare Private Sub W32_NSFNoteGetInfo Lib "nnotes.dll" Alias "NSFNoteGetInfo" (ByVal hNote As Long, ByVal Note_Member As Integer, Value_ptr As Integer)
+
+'=========================
+'===   P R I V A T E   ===
+'=== C O N S T A N T S ===
+'=========================
+'*** NOTE FLAGS ***
+Private Const NOTE_FLAGS% = 7
+Private Const NOTE_FLAG_READONLY% = &H0001
+
+'=========================
+'===    P U B L I C    ===
+'=== C O N S T A N T S ===
+'=========================
+'*** FIELDS ***
+Public Const LS_FIELD_UNID = "UNID"
+
+'*** BaseObject ***
+%REM
+	Описание: 
+%END REM
+Class BaseObject
+	
+	'ToString
+	%REM
+		Описание: 
+	%END REM
+	Public Function ToString() As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "BaseObject.ToString ()"
+		
+		ToString = TypeName(Me)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class
+'*** Objects ***
+%REM
+	Описание: 
+%END REM
+Class Objects As BaseObject
+	
+	'IsObject
+	%REM
+		Описание: 
+	%END REM
+	Public Sub IsObject(param As Variant, msg As String)
+		On Error GoTo ErrorHandler
+		Const FuncName = "Objects.IsObject ()"
+		
+		If Not IsObject(param) Then
+			If msg = "" Then
+				Call ThrowError(LS_ERRORCODE_NOT_AN_OBJECT)
+			Else
+				Error LS_ERRORCODE_NOT_AN_OBJECT, msg
+			End If
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'NotNothing
+	%REM
+		Описание: 
+	%END REM
+	Public Sub NotNothing(param As Variant, msg As String)
+		On Error GoTo ErrorHandler
+		Const FuncName = "Objects.NotNothing ()"
+		
+		Call Me.IsObject(Param, "")
+		If param Is Nothing Then
+			If msg = "" Then
+				Call ThrowError(LS_ERRORCODE_IS_NOTHING)
+			Else
+				Error LS_ERRORCODE_IS_NOTHING, msg
+			End If
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'IsArray
+	%REM
+		Описание: 
+	%END REM
+	Public Sub IsArray(param As Variant, msg As String)
+		On Error GoTo ErrorHandler
+		Const FuncName = "Objects.IsArray ()"
+		
+		If Not IsArray(param) Then
+			If msg = "" Then
+				Call ThrowError(LS_ERRORCODE_NOT_ARRAY)
+			Else
+				Error LS_ERRORCODE_NOT_ARRAY, msg
+			End If
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+
+End Class
+'*** Domino ***
+%REM
+	Описание: 
+%END REM
+Class Domino As BaseObject
+	
+	'GetDocumentUNID
+	%REM
+		Описание: 
+	%END REM
+	Public Function GetDocumentUNID(doc As NotesDocument) As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "Domino.GetDocumentUNID ()"
+		
+		Call Objects.Notnothing(doc, "")
+		
+		Dim value As String
+		
+		value = CStr(doc.GetItemValue(LS_FIELD_UNID)(0))
+		If value <> "" Then
+			GetDocumentUNID = value
+		Else
+			GetDocumentUNID = doc.UniversalID
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'IsNewDocument
+	%REM
+		Описание: 
+	%END REM
+	Public Function IsNewDocument(doc As NotesDocument) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "Domino.IsNewDocument ()"
+		
+		Call Objects.Notnothing(doc, "")
+		IsNewDocument = (Implode (Evaluate ({@NoteID}, doc)) = "NT00000000")
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'CanEditDocument
+	%REM
+		Описание: 
+	%END REM
+	Public Function CanEditDocument(doc As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "Domino.CanEditDocument ()"
+		
+		Dim NoteFlag As Integer
+		Dim hNote&
+		
+		hNote& = doc.Handle
+		If hNote& <> 0 Then
+			Call W32_NSFNoteGetInfo (hNote&, NOTE_FLAGS%, NoteFlag)
+			
+			If NoteFlag And NOTE_FLAG_READONLY% Then
+				CanEditDocument = False
+			Else
+				CanEditDocument = True
+			End If
+			
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'GetDatabaseInfo
+	%REM
+		Описание: 
+	%END REM
+	Public Function GetDatabaseInfo(db As NotesDatabase) As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "Domino.GetDatabaseInfo ()"
+		
+		Call Objects.Notnothing(db, "")
+		GetDatabaseInfo = "Title = " & db.Title & ", FilePath = " & db.Filepath & ", ReplicaId = " & db.Replicaid
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'GetDocumentInfo
+	%REM
+		Описание: 
+	%END REM
+	Public Function GetDocumentInfo(doc As NotesDocument) As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "Domino.GetDocumentInfo ()"
+		
+		Call Objects.Notnothing(doc, "")
+		GetDocumentInfo = "UniversalId = " & doc.Universalid & ", Database [" & _
+		Me.GetDatabaseInfo(doc.Parentdatabase) & "]"
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class
+'*** Arrays ***
+%REM
+	Описание: 
+%END REM
+Class Arrays As BaseObject
+	
+	'IsEqual
+	%REM
+		Описание: 
+	%END REM
+	Public Function Equals(array1 As Variant, array2 As Variant) As Boolean
+		On Error GoTo ErrorHandler
+		Const FuncName = "Arrays.Equals ()"
+		
+		If Me.GetLength(array1) <> Me.GetLength(array2) Then
+			GoTo endh
+		Else
+			Dim i%, j%
+			j = LBound(array2)
+			For i = LBound(array1) To UBound(array2)
+				If array1(i) <> array2(j) Then
+					GoTo endh
+				End If
+				j = j + 1
+			Next
+		End If
+		
+		Equals = True
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'GetLength
+	%REM
+		Описание: 
+	%END REM
+	Public Function GetLength(array As Variant) As Integer
+		On Error GoTo ErrorHandler
+		Const FuncName = "Arrays.GetLength ()"
+		
+		Call Objects.Isarray(array, "")
+		GetLength = UBound(array) - LBound(array) + 1
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'ToArray
+	%REM
+		Описание: 
+	%END REM
+	Public Function ToArray(source As Variant) As Variant
+		On Error GoTo ErrorHandler
+		Const FuncName = "Arrays.ToArray ()"
+		
+		If IsArray(source) Then
+			ToArray = source
+		Else
+			Dim result As Variant
+			ReDim result(0)
+			If IsObject(source) Then
+				Set result(0) = source
+			Else
+				result(0) = source
+			End If
+			ToArray = result
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	'Append
+	%REM
+		Описание: 
+	%END REM
+	Public Function Append(array As Variant, value As Variant) As Variant
+		On Error GoTo ErrorHandler
+		Const FuncName = "Arrays.Append ()"
+		
+		Call Objects.Isarray(array, "")
+		If IsArray(value) Then
+			Dim i%, startIndex%
+			
+			startIndex = UBound(array) + 1
+			ReDim Preserve array(LBound(array) To (UBound(array) + Me.GetLength(value)))
+			
+			Dim j%
+			j = 0
+			For i = LBound(value) To UBound(value)
+				If IsObject(value(i)) Then
+					Set array(startIndex + j) = value(i)
+				Else
+					array(startIndex + j) = value(i)
+				End If
+				j = j + 1			
+			Next
+			
+			Me.Append = array
+		Else
+			Me.Append = Me.Append(array, Me.ToArray(value))
+		End If
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Public Function Unique(array As Variant) As Variant
+		On Error GoTo ErrorHandler
+		Const FuncName = "Arrays.Unique ()"
+		
+		Call Objects.Isarray(array, "")
+		
+		Dim i%, j%
+		For i = LBound(array) To UBound(array) - 1
+			For j = i + 1 To UBound(array)
+				If Not (IsObject(array(i)) And IsObject(array(j))) Then
+					If array(i) = array(j) Then
+						array(j) = ""
+					End If
+				End If
+			Next
+		Next
+		
+		Unique = array
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+	
+	Public Function Trim(array As Variant) As Variant
+		On Error GoTo ErrorHandler
+		Const FuncName = "Arrays.Trim ()"
+		
+		Call Objects.Isarray(array, "")
+		
+		Dim i%, j%
+		Dim lowerBound As Long
+		Dim upperBound As Long
+		Dim result As Variant
+		
+		lowerBound = LBound (array)
+		upperBound = UBound (array)
+		i = lowerBound
+		j = i
+		ReDim result(j To j)
+		result(j) = ""
+		
+		While i <= upperBound
+			
+			If IsObject(array(i)) Then
+				If Not array(i) Is Nothing Then
+					ReDim Preserve result(lowerBound To j)
+					Set result(j) = array(i)
+					j = j + 1
+				End If
+							
+			Else
+				If CStr(array(i)) <> "" Then
+					ReDim Preserve result(lowerBound To j)
+					result(j) = array(i)
+					j = j + 1
+				End If
+			End If
+			
+			i = i + 1
+		Wend
+		
+		array = result
+		Me.Trim = array
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Function
+
+End Class
+'*** AbstractEntity ***
+%REM
+	Описание: 
+%END REM
+Class AbstractEntity As BaseObject
+	
+	Private id_ As String
+	
+	'Id
+	Public Property Get Id As String
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractEntity.Id GET"
+		
+		Id = id_
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Property
+	
+	'@Abstract
+	Public Function SetValue(itemName As String, itemValue As Variant) As Variant
+	End Function
+	
+	'@Abstract
+	Public Function GetValue(itemName As String) As Variant
+	End Function
+
+End Class
+'++LotusScript Development Environment:2:1:Objects:5:8
+'Objects
+%REM
+	Описание: 
+%END REM
+Static Function Objects() As Objects
+	On Error GoTo ErrorHandler
+	Const FuncName = "Objects ()"
+	
+	Static this As Objects
+	
+	If this Is Nothing Then
+		Set this = New Objects()
+	End If
+	
+	Set Objects = this
+	
+	GoTo endh
+ErrorHandler:
+	Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:Domino:5:8
+'Domino
+%REM
+	Описание: 
+%END REM
+Static Function Domino() As Domino
+	On Error GoTo ErrorHandler
+	Const FuncName = "Domino ()"
+	
+	Static this As Domino
+	If this Is Nothing Then
+		Set this = New Domino()
+	End If
+	
+	Set Domino = this
+	
+	GoTo endh
+ErrorHandler:
+	Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+End Function
+
+'++LotusScript Development Environment:2:1:Arrays:5:8
+'Arrays
+%REM
+	Описание: 
+%END REM
+Static Function Arrays() As Arrays
+	On Error GoTo ErrorHandler
+	Const FuncName = "Arrays ()"
+	
+	Static this As Arrays
+	
+	If this Is Nothing Then
+		Set this = New Arrays()
+	End If
+	
+	Set Arrays = this
+	
+	GoTo endh
+ErrorHandler:
+	Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+End Function
+

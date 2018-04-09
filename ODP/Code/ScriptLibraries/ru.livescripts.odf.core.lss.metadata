@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?><note class="filter" maintenanceversion="1.0" replicaid="432581AE006C722E" version="9.0" xmlns="http://www.lotus.com/dxl">
+<noteinfo noteid="166" sequence="57" unid="99B0B6BBD8F29444432581AE006C8AC1">
+<created><datetime>20171003T224534,09+03</datetime></created>
+<modified><datetime>20180409T170222,43+03</datetime></modified>
+<revised><datetime>20180409T170222,42+03</datetime></revised>
+<lastaccessed><datetime>20180409T170222,43+03</datetime></lastaccessed>
+<addedtofile><datetime>20171003T224534,36+03</datetime></addedtofile></noteinfo>
+<updatedby><name>CN=Artem A Areshko/O=LiveScripts/C=RU</name></updatedby>
+<wassignedby><name>CN=Artem A Areshko/O=LiveScripts/C=RU</name></wassignedby>
+<item name="$Flags"><text>s34Q</text></item>
+<item name="$PublicAccess" sign="true"><text>1</text></item>
+<item name="$TITLE" sign="true"><text>ru.livescripts.odf.core</text></item>
+<item name="$DesignerVersion" sign="true"><text>8.5.3</text></item>
+
+
+<item name="$Comment"><text>1.0.0</text></item></note>

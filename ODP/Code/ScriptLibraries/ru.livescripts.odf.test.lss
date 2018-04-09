@@ -1,0 +1,843 @@
+'++LotusScript Development Environment:2:5:(Options):0:74
+%REM
+	ru.livescripts.odf.test
+	
+	Создана: Oct 7, 2017
+	Автор Artem A Areshko/LiveScripts/RU (Live-Scripts)
+	
+	Описание: 
+%END REM
+
+Option Public
+Option Declare
+
+Use "ru.livescripts.odf.core.wrappers"
+Use "ru.livescripts.dunit.matchers"
+
+%REM
+	---=== История изменений ===---
+	--- Версия: X.X.X; DD.MM.YYYY; Name
+	1. 
+	
+%END REM
+
+'++LotusScript Development Environment:2:5:(Forward):0:1
+Declare Class DominoTest As AbstractTest
+Declare Class ArraysTest As AbstractTest
+Declare Class AbstractDocumentTest As AbstractTest
+Declare Class BaseObjectTest As AbstractTest
+
+'++LotusScript Development Environment:2:5:(Declarations):0:10
+Private Const DESIGN = "ru.livescripts.odf.test"
+
+
+'*** DominoTest ***
+%REM
+	Описание: 
+%END REM
+Class DominoTest As AbstractTest
+	
+	Private session As NotesSession
+	
+	'New
+	%REM
+		Описание: 
+	%END REM
+	Public Sub New()
+		On Error GoTo ErrorHandler
+		Const FuncName = "DominoTest.New ()"
+		
+		Set session = New NotesSession
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestIsNewDocument
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestIsNewDocument()
+		On Error GoTo ErrorHandler
+		Const FuncName = "DominoTest.TestIsNewDocument ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		
+		Assert.True(Domino.Isnewdocument(doc))
+		Call doc.Save(true, true, true)
+		Assert.False(Domino.Isnewdocument(doc))
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestCanEditDocument
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestCanEditDocument()
+		On Error GoTo ErrorHandler
+		Const FuncName = "DominoTest.TestCanEditDocument ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		
+		Assert.True(Domino.Caneditdocument(doc))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+
+End Class
+'*** ArraysTest ***
+%REM
+	Описание: 
+%END REM
+Class ArraysTest As AbstractTest
+	
+	'TestToArray
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestToArray()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestToArray ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim value As Variant
+		
+		value = "value"
+		Assert.True(IsArray(Arrays.Toarray(value)))
+		
+		ReDim value(0 To 1)
+		Assert.True(IsArray(Arrays.Toarray(value)))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestGetLength
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestGetLength()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestGetLength ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim array(0 To 10)
+		Dim matcher As New SimpleValueMatcher(Arrays.Getlength(array), 11)
+		Call Assert.Equals(matcher)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestGetLengthNotArray
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestGetLengthNotArray()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestGetLengthNotArray ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim value
+		
+		On Error LS_ERRORCODE_NOT_ARRAY GoTo AssertErrorHandler
+		Call Arrays.Getlength(value)
+		
+		GoTo endh
+AssertErrorHandler:
+		Call Me.EndTest(funcName)
+		Resume endh
+ErrorHandler:		
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestEquals
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestEquals()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestEquals ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim array1 As Variant
+		Dim array2 As Variant
+		Dim array3 As Variant
+		
+		array1 = Evaluate({"a1" : "a2"})
+		array2 = Evaluate({"a1" : "a2" : "a3"})
+		array3 = Evaluate({"a1" : "a2"})
+		
+		Call Assert.True(Arrays.Equals(Array1, Array3))
+		Call Assert.False(Arrays.Equals(Array1, Array2))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestAppend
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestAppend()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestAppend ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim array1 As Variant
+		Dim array2 As Variant
+		
+		array1 = Evaluate({"a1" : "a2"})
+		array2 = Evaluate({"a3" : "a4"})
+		
+		Dim result As Variant
+		result = Arrays.Append(array1, array2)
+		
+		Call Assert.True(Arrays.Getlength(result) = 4)
+		Call Assert.True(Arrays.Equals(result, Evaluate({"a1" : "a2" : "a3" : "a4"})))
+		
+		result = Arrays.Append(result, "a5")
+		Call Assert.True(Arrays.Getlength(result) = 5)
+		Call Assert.True(Arrays.Equals(result, Evaluate({"a1" : "a2" : "a3" : "a4" : "a5"})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	Public Sub TestUnique()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestUnique ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim array As Variant
+		
+		array = Evaluate({"a" : "b" : "a" : "c"})
+		
+		Dim result As Variant
+		result = Arrays.Unique(array)
+		
+		Call Assert.True(Arrays.Getlength(result) = 4)
+		Call Assert.True(Arrays.Equals(array, Evaluate({"a" : "b" : "" : "c"})))
+		Call Assert.True(Arrays.Equals(result, Evaluate({"a" : "b" : "" : "c"})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	Public Sub TestTrim()
+		On Error GoTo ErrorHandler
+		Const FuncName = "ArraysTest.TestTrim ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim array As Variant
+		
+		array = Evaluate({"a" : "b" : "" : "c"})
+		
+		Dim result As Variant
+		result = Arrays.Trim(array)
+		
+		Call Assert.True(Arrays.Getlength(result) = 3)
+		Call Assert.True(Arrays.Equals(array, Evaluate({"a" : "b" : "c"})))
+		Call Assert.True(Arrays.Equals(result, Evaluate({"a" : "b" : "c"})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+
+End Class
+'*** AbstractDocumentTest ***
+%REM
+	Описание: 
+%END REM
+Class AbstractDocumentTest As AbstractTest
+	
+	Private session As NotesSession
+	
+	'New
+	%REM
+		Описание: 
+	%END REM
+	Public Sub New()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.New ()"
+		
+		Set session = New NotesSession
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestNew
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestNew_NotesDocument()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestNew_NotesDocument ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Dim wrapper As New AbstractDocument(doc)
+		
+		Call Assert.NotNothing(wrapper.Doc)
+		Call Assert.NotNothing(wrapper.Db)
+		
+		Dim dbMatcher As New DatabaseMatcher(wrapper.Db, doc.Parentdatabase)
+		Call Assert.Equals(dbMatcher)
+		Dim docMatcher As New DocumentMatcher(wrapper.Doc, doc)
+		Call Assert.Equals(docMatcher)		
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestNew_NotesDatabase
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestNew_NotesDatabase()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestNew_NotesDatabase ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim db As NotesDatabase
+		
+		Set db = session.Currentdatabase
+		Dim wrapper As New AbstractDocument(db)
+		
+		Call Assert.NotNothing(wrapper.Doc)
+		Call Assert.NotNothing(wrapper.Db)
+		Call Assert.True(CBool(wrapper.Doc.Isnewnote))
+		Call Assert.True(wrapper.IsNew())
+		
+		Dim dbMatcher As New DatabaseMatcher(wrapper.Db, db)
+		Call Assert.Equals(dbMatcher)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestNew_Nothing
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestNew_Nothing()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestNew_Nothing ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		On Error LS_ERRORCODE_IS_NOTHING GoTo AssertErrorHandler
+		Dim wrapper As New AbstractDocument(Nothing)
+		
+		GoTo endh
+AssertErrorHandler:
+		Call Me.EndTest(funcName)
+		Resume endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestSave
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestSave()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestSave ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Dim wrapper As New AbstractDocument(doc)
+		
+		Assert.True(wrapper.Save())
+		
+		Call Assert.NotNothing(wrapper.Doc)
+		Call Assert.NotNothing(wrapper.Db)
+		
+		Set doc = session.Currentdatabase.Getdocumentbyunid(doc.Universalid)
+		Dim dbMatcher As New DatabaseMatcher(wrapper.Db, doc.Parentdatabase)
+		Call Assert.Equals(dbMatcher)
+		Dim docMatcher As New DocumentMatcher(wrapper.Doc, doc)
+		Call Assert.Equals(docMatcher)
+		
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestSetValue
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestSetValue()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestSetValue ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Call doc.Save(False, False)
+		
+		Dim wrapper As New AbstractDocument(doc)
+		Dim item As NotesItem
+		Set item = wrapper.SetValue("Test", "TestValue")
+		Call Assert.Notnothing(item)
+		Call Assert.True(wrapper.IsModified)
+		
+		Dim matcher As New SimpleValueMatcher("TestValue", wrapper.GetValue("Test")(0))
+		Call Assert.Equals(matcher)
+		
+		Set matcher = New SimpleValueMatcher("TestValue", item.Values(0))
+		Call Assert.Equals(matcher)
+		
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestSetValue_NoChange
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestSetValue_NoChange()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestSetValue_NoChange ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Call doc.Replaceitemvalue("Test", "TestValue")
+		Call doc.Save(False, False)
+		
+		Dim wrapper As New AbstractDocument(doc)
+		Call Assert.Notnothing(wrapper.SetValue("Test", "TestValue"))
+		Call Assert.False(wrapper.IsModified)
+		
+		Dim matcher As New SimpleValueMatcher("TestValue", wrapper.GetValue("Test")(0))
+		Call Assert.Equals(matcher)
+		
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestAppendValue
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestAppendValue()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestAppendValue ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Call doc.Replaceitemvalue("Test", "TestValue1")
+		Call doc.Save(False, False)
+		
+		Dim wrapper As New AbstractDocument(doc)		
+		Dim item As NotesItem
+		Set item = wrapper.AppendValue("Test", "TestValue2")
+		Call Assert.Notnothing(item)
+		Call Assert.True(wrapper.IsModified)
+		
+		Call Assert.True(UBound(wrapper.GetValue("Test")) = 1)
+		
+		Dim matcher As New SimpleValueMatcher("TestValue2", wrapper.GetValue("Test")(1))
+		Call Assert.Equals(matcher)
+		
+		Set matcher = New SimpleValueMatcher("TestValue2", item.Values(1))
+		Call Assert.Equals(matcher)
+		
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestDeleteValue
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestDeleteValue()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestDeleteValue ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Call doc.Replaceitemvalue("Test", "TestValue")
+		Call doc.Save(False, False)
+		
+		Dim wrapper As New AbstractDocument(doc)		
+		Call wrapper.DeleteValue("Test")
+		Call Assert.False(doc.Hasitem("Test"))
+		Call Assert.True(wrapper.IsModified)
+		
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestDeleteValue_NoItem
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestDeleteValue_NoItem()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestDeleteValue_NoItem ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Call doc.Save(False, False)
+		
+		Dim wrapper As New AbstractDocument(doc)		
+		Call wrapper.DeleteValue("Test")
+		Call Assert.False(doc.Hasitem("Test"))
+		Call Assert.False(wrapper.IsModified)
+		
+		Call doc.Remove(True)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestHasItem
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestHasItem()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestHasItem ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Call doc.Replaceitemvalue("Test", "TestValue")
+		
+		Dim wrapper As New AbstractDocument(doc)		
+		Call Assert.True(wrapper.Hasitem("Test"))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestFlag
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestFlag()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestFlag ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Dim wrapper As New AbstractDocument(doc)
+		
+		Call Assert.False(wrapper.Flag("TestFlag"))
+		
+		Call wrapper.SetValue("TestFlag", "TestValue")
+		Call Assert.False(wrapper.Flag("TestFlag"))
+		
+		Call wrapper.SetValue("TestFlag", "1")
+		Call Assert.True(wrapper.Flag("TestFlag"))
+				
+		wrapper.Flag("TestFlag") = False
+		Call Assert.False(wrapper.Flag("TestFlag"))
+		
+		wrapper.Flag("TestFlag") = True
+		Call Assert.True(wrapper.Flag("TestFlag"))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestTMPFlag
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestTMPFlag()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestTMPFlag ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Dim wrapper As New AbstractDocument(doc)
+		
+		Call Assert.False(wrapper.TMPFlag("TestFlag"))
+		
+		wrapper.TMPFlag("TestFlag") = False
+		Call Assert.False(wrapper.TMPFlag("TestFlag"))
+		
+		wrapper.TMPFlag("TestFlag") = True
+		Call Assert.True(wrapper.TMPFlag("TestFlag"))
+		
+		Call Assert.False(CBool(wrapper.GetItem("TestFlag").Savetodisk))
+		
+		'Print wrapper.WrappedDocumentInfo
+		'Print wrapper.ToString()
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	'TestId
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestId()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestId ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim doc As New NotesDocument(session.Currentdatabase)
+		Dim wrapper As New AbstractDocument(doc)
+		
+		Call Assert.True(wrapper.UNID = wrapper.Id)
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	Public Sub TestSetReaders()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestSetReaders ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim wrapper As New AbstractDocument(session.Currentdatabase)
+		Call Assert.True(wrapper.SetReaders("doc", "Name"))
+		Call Assert.True(wrapper.GetReaders("doc")(0) = "Name")
+		
+		Dim names As Variant
+		names = Evaluate({"Name1" : "Name2"})
+		Call Assert.True(wrapper.SetReaders("doc", names))
+		Call Assert.True(Arrays.Equals(wrapper.GetReaders("doc"), names))
+		
+		Call Assert.False(wrapper.SetReaders("doc", ""))
+		Call Assert.False(wrapper.SetReaders("doc", Evaluate({"" : ""})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	Public Sub TestSetAuthors()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestSetAuthors ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Const DOC_DEF_READERS_WHICH_AUTHORS_PREFIX = "fromAuthors"
+		
+		Dim wrapper As New AbstractDocument(session.Currentdatabase)
+		Call Assert.True(wrapper.SetAuthors("doc", "Name"))
+		Call Assert.True(wrapper.GetAuthors("doc")(0) = "Name")
+		Call Assert.True(wrapper.GetReaders(DOC_DEF_READERS_WHICH_AUTHORS_PREFIX)(0) = "Name")
+		
+		Dim names As Variant
+		names = Evaluate({"Name1" : "Name2"})
+		Call Assert.True(wrapper.SetAuthors("doc", names))
+		Call Assert.True(Arrays.Equals(wrapper.GetAuthors("doc"), names))
+		Call Assert.True(Arrays.Equals(wrapper.GetReaders(DOC_DEF_READERS_WHICH_AUTHORS_PREFIX), Evaluate({"Name" : "Name1" : "Name2"})))
+		
+		Call Assert.False(wrapper.SetAuthors("doc", ""))
+		Call Assert.False(wrapper.SetAuthors("doc", Evaluate({"" : ""})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	Public Sub TestAddReaders()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestAddReaders ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim wrapper As New AbstractDocument(session.Currentdatabase)
+		Call wrapper.SetReaders("doc", "Name")
+		
+		Call Assert.True(wrapper.AddReaders("doc", "Name1"))
+		Call Assert.True(Arrays.Equals(wrapper.GetReaders("doc"), Evaluate({"Name" : "Name1"})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+	
+	Public Sub TestAddAuthors()
+		On Error GoTo ErrorHandler
+		Const FuncName = "AbstractDocumentTest.TestAddAuthors ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Const DOC_DEF_READERS_WHICH_AUTHORS_PREFIX = "fromAuthors"
+		
+		Dim wrapper As New AbstractDocument(session.Currentdatabase)
+		Call wrapper.SetAuthors("doc", "Name")
+		
+		Call Assert.True(wrapper.AddAuthors("doc", Evaluate({"Name1" : "Name2"})))
+		Call Assert.True(Arrays.Equals(wrapper.GetAuthors("doc"), Evaluate({"Name" : "Name1" : "Name2"})))
+		Call Assert.True(Arrays.Equals(wrapper.GetReaders(DOC_DEF_READERS_WHICH_AUTHORS_PREFIX), Evaluate({"Name" : "Name1" : "Name2"})))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+
+End Class
+'*** BaseObjectTest ***
+%REM
+	Описание: 
+%END REM
+Class BaseObjectTest As AbstractTest
+	
+	'TestToString
+	%REM
+		Описание: 
+	%END REM
+	Public Sub TestToString()
+		On Error GoTo ErrorHandler
+		Const FuncName = "BaseObjectTest.TestToString ()"
+		
+		Call Me.BeginTest(funcName)
+		
+		Dim baseObject As New BaseObject()
+		
+		Assert.True(LCase("BaseObject") = LCase(baseObject.ToString()))
+		
+		Call Me.EndTest(funcName)
+		
+		GoTo endh
+ErrorHandler:
+		Error Err, "(" & DESIGN & ") " & FuncName & ", стр. " & Erl & Chr(10) & Error$
+endh:
+	End Sub
+
+End Class
